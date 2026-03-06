@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="64" fill="#0f172a"/>
+  <rect x="140" y="80" width="120" height="170" rx="10" fill="white" transform="rotate(-10 200 165)"/>
+  <text x="165" y="170" font-family="serif" font-size="60" font-weight="bold" fill="#dc2626" transform="rotate(-10 200 165)">A</text>
+  <text x="195" y="220" font-family="serif" font-size="40" fill="#dc2626" transform="rotate(-10 200 165)">&#9829;</text>
+  <rect x="252" y="100" width="120" height="170" rx="10" fill="white" transform="rotate(10 312 185)"/>
+  <text x="275" y="190" font-family="serif" font-size="60" font-weight="bold" fill="#1e293b" transform="rotate(10 312 185)">K</text>
+  <text x="305" y="240" font-family="serif" font-size="40" fill="#1e293b" transform="rotate(10 312 185)">&#9824;</text>
+  <text x="256" y="400" font-family="sans-serif" font-size="48" font-weight="bold" fill="#10b981" text-anchor="middle">+1</text>
+  <text x="256" y="460" font-family="sans-serif" font-size="28" fill="#94a3b8" text-anchor="middle">HI-LO</text>
+</svg>
