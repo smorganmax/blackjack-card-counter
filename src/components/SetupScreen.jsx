@@ -1,8 +1,13 @@
 import React from 'react';
 
-export default function SetupScreen({ numPlayers, onSetPlayers, onStart }) {
+export default function SetupScreen({ numPlayers, onSetPlayers, onStart, onBack }) {
   return (
     <div className="flex flex-col items-center justify-center h-full px-6 bg-gradient-to-b from-slate-900 to-slate-800">
+      {onBack && (
+        <div className="absolute top-4 left-4">
+          <button onClick={onBack} className="text-gray-400 text-sm">&larr; Menu</button>
+        </div>
+      )}
       <div className="text-center mb-10 slide-up">
         <h1 className="text-4xl font-bold text-white mb-2">Blackjack</h1>
         <h2 className="text-xl text-emerald-400 font-medium">Card Counter Trainer</h2>

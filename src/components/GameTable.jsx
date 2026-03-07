@@ -2,8 +2,10 @@ import React, { useEffect } from 'react';
 import Hand from './Hand';
 import Controls from './Controls';
 import CountDisplay from './CountDisplay';
-import { handTotal, canSplit, canDoubleDown, isBlackjack, isBust } from '../utils/hand';
-import { shoeProgress } from '../utils/counting';
+import PenetrationIndicator from './PenetrationIndicator';
+import StrategyHelper from './StrategyHelper';
+import StrategyFeedback from './StrategyFeedback';
+import { handTotal, canSplit as canSplitCheck, canDoubleDown, isBlackjack, isBust } from '../utils/hand';
 
 export default function GameTable({
   dealerHand,
@@ -18,6 +20,9 @@ export default function GameTable({
   shoeSize,
   message,
   insuranceOffered,
+  settings,
+  strategyFeedback,
+  deviationFeedback,
   onHit,
   onStand,
   onDouble,
@@ -47,9 +52,8 @@ export default function GameTable({
   const activeHand = playerHands[activeHandIndex];
   const canHit = phase === PHASES.PLAYER_TURN && activeHand && !isBust(activeHand.cards) && handTotal(activeHand.cards) < 21;
   const canDbl = canHit && canDoubleDown(activeHand.cards);
-  const canSpl = canHit && canSplit(activeHand.cards);
+  const canSpl = canHit && canSplitCheck(activeHand.cards);
   const canStnd = phase === PHASES.PLAYER_TURN && activeHand && !isBust(activeHand.cards);
-  const progress = shoeProgress(shoeSize);
 
   return (
     <div className="flex flex-col h-full bg-gradient-to-b from-felt-dark to-felt relative overflow-hidden">
@@ -61,13 +65,15 @@ export default function GameTable({
         >
           {showCount ? 'Hide Count' : 'Show Count'}
         </button>
-        <div className="flex items-center gap-2">
-          <div className="text-xs text-gray-400">{progress}%</div>
-          <div className="w-16 h-1.5 bg-black/30 rounded-full overflow-hidden">
-            <div className="h-full bg-emerald-400 rounded-full" style={{ width: `${progress}%` }} />
-          </div>
-        </div>
       </div>
+
+      {/* Penetration indicator */}
+      <PenetrationIndicator
+        shoeSize={shoeSize}
+        trueCount={trueCount}
+        showPenetration={settings?.showPenetration}
+        showReliability={settings?.showReliability}
+      />
 
       {/* Count display */}
       {showCount && (
@@ -75,7 +81,7 @@ export default function GameTable({
       )}
 
       {/* Dealer area */}
-      <div className="flex-shrink-0 flex justify-center pt-2 pb-3">
+      <div className="flex-shrink-0 flex justify-center pt-1 pb-2">
         {dealerHand.length > 0 && (
           <Hand cards={dealerHand} hidden={dealerHidden} label="Dealer" />
         )}
@@ -95,9 +101,12 @@ export default function GameTable({
       {/* Spacer */}
       <div className="flex-1" />
 
+      {/* Strategy feedback (green check / red X) */}
+      <StrategyFeedback feedback={strategyFeedback} deviationFeedback={deviationFeedback} />
+
       {/* Message */}
       {message && (
-        <div className="text-center py-2">
+        <div className="text-center py-1">
           <span className="text-yellow-400 font-bold text-lg animate-pulse">{message}</span>
         </div>
       )}
@@ -121,7 +130,7 @@ export default function GameTable({
       )}
 
       {/* Player hands */}
-      <div className="flex-shrink-0 flex justify-center gap-4 px-2 pb-2">
+      <div className="flex-shrink-0 flex justify-center gap-4 px-2 pb-1">
         {playerHands.map((hand, i) => (
           <div key={i} className={`${i === activeHandIndex && phase === PHASES.PLAYER_TURN ? 'pulse-glow rounded-xl p-1' : 'p-1'}`}>
             <Hand
@@ -132,6 +141,17 @@ export default function GameTable({
           </div>
         ))}
       </div>
+
+      {/* Strategy helper (shows correct move before acting) */}
+      {phase === PHASES.PLAYER_TURN && !insuranceOffered && activeHand && (
+        <StrategyHelper
+          playerCards={activeHand.cards}
+          dealerUpcard={dealerHand[0]}
+          trueCount={trueCount}
+          enabled={settings?.strategyHelper}
+          deviationAlerts={settings?.deviationAlerts}
+        />
+      )}
 
       {/* Controls */}
       {phase === PHASES.PLAYER_TURN && !insuranceOffered && (
