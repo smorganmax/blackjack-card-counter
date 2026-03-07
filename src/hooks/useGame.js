@@ -1,8 +1,11 @@
 import { useReducer, useCallback } from 'react';
-import { createShoe, shouldReshuffle, TOTAL_CARDS } from '../utils/deck';
-import { handTotal, isBlackjack, isBust, canSplit, canDoubleDown, handResult } from '../utils/hand';
+import { createShoe, TOTAL_CARDS } from '../utils/deck';
+import { handTotal, isBlackjack, isBust, canSplit, canDoubleDown, handResult, isSoft } from '../utils/hand';
 import { runningCount, trueCount, hiLoValue } from '../utils/counting';
-import { loadStats, saveStats, defaultStats } from '../utils/storage';
+import { loadStats, saveStats, defaultStats, loadSettings, saveSettings } from '../utils/storage';
+import { checkStrategy } from '../utils/strategy';
+import { checkDeviationPlay } from '../utils/deviations';
+import { isBetOptimal } from '../components/BetCoachIndicator';
 
 const PHASES = {
   SETUP: 'setup',
@@ -15,7 +18,12 @@ const PHASES = {
   ROUND_RESULT: 'roundResult'
 };
 
+function customShouldReshuffle(shoe, penetrationPercent = 75) {
+  return shoe.length <= TOTAL_CARDS * (1 - penetrationPercent / 100);
+}
+
 function initialState() {
+  const settings = loadSettings();
   return {
     phase: PHASES.SETUP,
     numPlayers: 1,
@@ -29,13 +37,18 @@ function initialState() {
     activeHandIndex: 0,
     currentBet: 10,
     stats: loadStats(),
-    showCount: false,
+    settings,
+    showCount: settings.showCount,
     roundResults: [],
     quizAnswer: null,
     quizSubmitted: false,
     insurance: false,
     insuranceOffered: false,
-    message: ''
+    message: '',
+    strategyFeedback: null,
+    deviationFeedback: null,
+    handsSinceQuiz: 0,
+    countQuizMode: false,
   };
 }
 
@@ -111,8 +124,9 @@ function reducer(state, action) {
     case 'DEAL': {
       let shoe = [...state.shoe];
       let dealtCards = [...state.dealtCards];
+      const pen = state.settings?.penetrationPercent || 75;
 
-      if (shouldReshuffle(shoe)) {
+      if (customShouldReshuffle(shoe, pen)) {
         shoe = createShoe();
         dealtCards = [];
       }
@@ -139,6 +153,20 @@ function reducer(state, action) {
       const rc = runningCount(dealtCards);
       const dealerShowsAce = d1.cards[0].rank === 'A';
 
+      // Track bet spread stats
+      const tc = trueCount(rc, shoe.length);
+      const stats = { ...state.stats };
+      const betOpt = isBetOptimal(state.currentBet, tc);
+      stats.betTotal = (stats.betTotal || 0) + 1;
+      if (betOpt) stats.betCorrect = (stats.betCorrect || 0) + 1;
+      if (state.currentBet >= 40) {
+        stats.bigBetTcSum = (stats.bigBetTcSum || 0) + tc;
+        stats.bigBetCount = (stats.bigBetCount || 0) + 1;
+      } else {
+        stats.smallBetTcSum = (stats.smallBetTcSum || 0) + tc;
+        stats.smallBetCount = (stats.smallBetCount || 0) + 1;
+      }
+
       // Check for dealer blackjack with ace showing
       const nextPhase = dealerShowsAce ? PHASES.PLAYER_TURN :
         isBlackjack(p1.cards) ? PHASES.DEALER_TURN : PHASES.PLAYER_TURN;
@@ -156,7 +184,10 @@ function reducer(state, action) {
         activeHandIndex: 0,
         insuranceOffered: dealerShowsAce,
         insurance: false,
-        message: dealerShowsAce ? 'Insurance?' : (isBlackjack(p1.cards) ? 'Blackjack!' : '')
+        message: dealerShowsAce ? 'Insurance?' : (isBlackjack(p1.cards) ? 'Blackjack!' : ''),
+        strategyFeedback: null,
+        deviationFeedback: null,
+        stats,
       };
     }
 
@@ -176,6 +207,13 @@ function reducer(state, action) {
     }
 
     case 'HIT': {
+      // Check strategy BEFORE the hit (using current hand)
+      const preHitHand = state.playerHands[state.activeHandIndex];
+      const dealerUp = state.dealerHand[0];
+      const stratCheck = checkStrategy('hit', preHitHand.cards, dealerUp);
+      const tc_h = trueCount(state.runningCount, state.shoe.length);
+      const devCheck = checkDeviationPlay('hit', preHitHand.cards, dealerUp, tc_h);
+
       const { card, shoe, dealtCards } = dealCard(state);
       if (!card) return state;
 
@@ -208,6 +246,9 @@ function reducer(state, action) {
         }
       }
 
+      // Update strategy stats
+      const stats = updateStrategyStats(state.stats, stratCheck, devCheck);
+
       return {
         ...state,
         shoe,
@@ -216,19 +257,36 @@ function reducer(state, action) {
         playerHands: hands,
         activeHandIndex: activeIndex,
         phase: nextPhase,
-        message
+        message,
+        strategyFeedback: stratCheck,
+        deviationFeedback: devCheck,
+        stats,
       };
     }
 
     case 'STAND': {
+      const preStandHand = state.playerHands[state.activeHandIndex];
+      const dealerUp_s = state.dealerHand[0];
+      const stratCheck_s = checkStrategy('stand', preStandHand.cards, dealerUp_s);
+      const tc_s = trueCount(state.runningCount, state.shoe.length);
+      const devCheck_s = checkDeviationPlay('stand', preStandHand.cards, dealerUp_s, tc_s);
+
+      const stats_s = updateStrategyStats(state.stats, stratCheck_s, devCheck_s);
+
       let activeIndex = state.activeHandIndex;
       if (activeIndex < state.playerHands.length - 1) {
-        return { ...state, activeHandIndex: activeIndex + 1 };
+        return { ...state, activeHandIndex: activeIndex + 1, strategyFeedback: stratCheck_s, deviationFeedback: devCheck_s, stats: stats_s };
       }
-      return { ...state, phase: PHASES.DEALER_TURN };
+      return { ...state, phase: PHASES.DEALER_TURN, strategyFeedback: stratCheck_s, deviationFeedback: devCheck_s, stats: stats_s };
     }
 
     case 'DOUBLE': {
+      const preDoubleHand = state.playerHands[state.activeHandIndex];
+      const dealerUp_d = state.dealerHand[0];
+      const stratCheck_d = checkStrategy('double', preDoubleHand.cards, dealerUp_d);
+      const tc_d = trueCount(state.runningCount, state.shoe.length);
+      const devCheck_d = checkDeviationPlay('double', preDoubleHand.cards, dealerUp_d, tc_d);
+
       const { card, shoe, dealtCards } = dealCard(state);
       if (!card) return state;
 
@@ -245,6 +303,8 @@ function reducer(state, action) {
         activeIndex++;
       }
 
+      const stats_d = updateStrategyStats(state.stats, stratCheck_d, devCheck_d);
+
       return {
         ...state,
         shoe,
@@ -253,7 +313,10 @@ function reducer(state, action) {
         playerHands: hands,
         activeHandIndex: activeIndex,
         phase: activeIndex === state.activeHandIndex ? PHASES.DEALER_TURN : state.phase,
-        message: isBust(hand.cards) ? 'Bust!' : ''
+        message: isBust(hand.cards) ? 'Bust!' : '',
+        strategyFeedback: stratCheck_d,
+        deviationFeedback: devCheck_d,
+        stats: stats_d,
       };
     }
 
@@ -262,14 +325,17 @@ function reducer(state, action) {
       const hand = hands[state.activeHandIndex];
       if (!canSplit(hand.cards)) return state;
 
+      const dealerUp_sp = state.dealerHand[0];
+      const stratCheck_sp = checkStrategy('split', hand.cards, dealerUp_sp);
+      const tc_sp = trueCount(state.runningCount, state.shoe.length);
+      const devCheck_sp = checkDeviationPlay('split', hand.cards, dealerUp_sp, tc_sp);
+
       let shoe = [...state.shoe];
       let dealtCards = [...state.dealtCards];
 
-      // Create two new hands from the split
       const card1 = hand.cards[0];
       const card2 = hand.cards[1];
 
-      // Deal one card to each split hand
       const r1 = dealMultiple(shoe, dealtCards, 1);
       shoe = r1.shoe;
       dealtCards = r1.dealtCards;
@@ -283,13 +349,18 @@ function reducer(state, action) {
 
       hands.splice(state.activeHandIndex, 1, hand1, hand2);
 
+      const stats_sp = updateStrategyStats(state.stats, stratCheck_sp, devCheck_sp);
+
       return {
         ...state,
         shoe,
         dealtCards,
         runningCount: runningCount(dealtCards),
         playerHands: hands,
-        message: 'Hand split!'
+        message: 'Hand split!',
+        strategyFeedback: stratCheck_sp,
+        deviationFeedback: devCheck_sp,
+        stats: stats_sp,
       };
     }
 
@@ -303,14 +374,17 @@ function reducer(state, action) {
       shoe = otherResult.shoe;
       dealtCards = otherResult.dealtCards;
 
-      // Dealer plays: hit on 16 or less, stand on all 17s (including soft 17 per rules: stand on soft 17)
-      while (handTotal(dealerHand) < 17 && shoe.length > 0) {
+      // Dealer plays: hit on soft 17 (H17 rules)
+      let dealerTotal = handTotal(dealerHand);
+      while ((dealerTotal < 17 || (dealerTotal === 17 && isSoft(dealerHand))) && shoe.length > 0) {
         const card = shoe.pop();
         dealerHand.push(card);
         dealtCards.push(card);
+        dealerTotal = handTotal(dealerHand);
       }
 
       const rc = runningCount(dealtCards);
+      const tc_dp = trueCount(rc, shoe.length);
 
       // Calculate results for each player hand
       const roundResults = state.playerHands.map(hand => {
@@ -338,13 +412,25 @@ function reducer(state, action) {
       const stats = { ...state.stats };
       stats.handsPlayed += state.playerHands.length;
       stats.chips += totalPayout;
+
+      // Track wins by count
       for (const r of roundResults) {
+        if (tc_dp > 0) {
+          stats.handsAtPositive = (stats.handsAtPositive || 0) + 1;
+          if (r.result === 'win' || r.result === 'blackjack') stats.winsAtPositive = (stats.winsAtPositive || 0) + 1;
+        } else {
+          stats.handsAtNegative = (stats.handsAtNegative || 0) + 1;
+          if (r.result === 'win' || r.result === 'blackjack') stats.winsAtNegative = (stats.winsAtNegative || 0) + 1;
+        }
+
         if (r.result === 'win') stats.wins++;
         else if (r.result === 'blackjack') { stats.wins++; stats.blackjacks++; }
         else if (r.result === 'lose') stats.losses++;
         else if (r.result === 'bust') { stats.losses++; stats.busts++; }
         else if (r.result === 'push') stats.pushes++;
       }
+
+      const newHandsSinceQuiz = (state.handsSinceQuiz || 0) + 1;
 
       return {
         ...state,
@@ -357,7 +443,8 @@ function reducer(state, action) {
         roundResults,
         stats,
         phase: PHASES.COUNT_QUIZ,
-        message: ''
+        message: '',
+        handsSinceQuiz: newHandsSinceQuiz,
       };
     }
 
@@ -367,6 +454,16 @@ function reducer(state, action) {
       const stats = { ...state.stats };
       stats.countGuesses++;
       if (correct) stats.countCorrect++;
+
+      // Track distraction accuracy
+      if (state.settings?.casinoDistractions) {
+        stats.distractionCountTotal = (stats.distractionCountTotal || 0) + 1;
+        if (correct) stats.distractionCountCorrect = (stats.distractionCountCorrect || 0) + 1;
+      } else {
+        stats.normalCountTotal = (stats.normalCountTotal || 0) + 1;
+        if (correct) stats.normalCountCorrect = (stats.normalCountCorrect || 0) + 1;
+      }
+
       saveStats(stats);
 
       return {
@@ -374,7 +471,8 @@ function reducer(state, action) {
         stats,
         quizAnswer: guess,
         quizSubmitted: true,
-        phase: PHASES.ROUND_RESULT
+        phase: PHASES.ROUND_RESULT,
+        handsSinceQuiz: 0,
       };
     }
 
@@ -388,7 +486,8 @@ function reducer(state, action) {
     }
 
     case 'NEXT_ROUND': {
-      const needsShuffle = shouldReshuffle(state.shoe);
+      const pen = state.settings?.penetrationPercent || 75;
+      const needsShuffle = customShouldReshuffle(state.shoe, pen);
       return {
         ...state,
         phase: PHASES.BETTING,
@@ -402,12 +501,20 @@ function reducer(state, action) {
         quizSubmitted: false,
         insurance: false,
         insuranceOffered: false,
-        message: needsShuffle ? 'Shuffling new shoe...' : ''
+        message: needsShuffle ? 'Shuffling new shoe...' : '',
+        strategyFeedback: null,
+        deviationFeedback: null,
       };
     }
 
     case 'TOGGLE_COUNT': {
       return { ...state, showCount: !state.showCount };
+    }
+
+    case 'UPDATE_SETTINGS': {
+      const newSettings = action.settings;
+      saveSettings(newSettings);
+      return { ...state, settings: newSettings, showCount: newSettings.showCount };
     }
 
     case 'RESET_STATS': {
@@ -417,12 +524,34 @@ function reducer(state, action) {
     }
 
     case 'BACK_TO_SETUP': {
-      return { ...initialState(), stats: state.stats };
+      return { ...initialState(), stats: state.stats, settings: state.settings };
     }
 
     default:
       return state;
   }
+}
+
+function updateStrategyStats(stats, stratCheck, devCheck) {
+  const s = { ...stats };
+  if (stratCheck) {
+    s.strategyTotal = (s.strategyTotal || 0) + 1;
+    if (stratCheck.correct) s.strategyCorrect = (s.strategyCorrect || 0) + 1;
+
+    // By type
+    const byType = { ...s.strategyByType } || { hard: { correct: 0, total: 0 }, soft: { correct: 0, total: 0 }, pair: { correct: 0, total: 0 } };
+    const ht = stratCheck.handType || 'hard';
+    if (byType[ht]) {
+      byType[ht] = { ...byType[ht], total: byType[ht].total + 1 };
+      if (stratCheck.correct) byType[ht] = { ...byType[ht], correct: byType[ht].correct + 1 };
+    }
+    s.strategyByType = byType;
+  }
+  if (devCheck && devCheck.isDeviation) {
+    s.deviationTotal = (s.deviationTotal || 0) + 1;
+    if (devCheck.correct) s.deviationCorrect = (s.deviationCorrect || 0) + 1;
+  }
+  return s;
 }
 
 export default function useGame() {
@@ -444,6 +573,7 @@ export default function useGame() {
     skipQuiz: useCallback(() => dispatch({ type: 'SKIP_QUIZ' }), []),
     nextRound: useCallback(() => dispatch({ type: 'NEXT_ROUND' }), []),
     toggleCount: useCallback(() => dispatch({ type: 'TOGGLE_COUNT' }), []),
+    updateSettings: useCallback((settings) => dispatch({ type: 'UPDATE_SETTINGS', settings }), []),
     resetStats: useCallback(() => dispatch({ type: 'RESET_STATS' }), []),
     backToSetup: useCallback(() => dispatch({ type: 'BACK_TO_SETUP' }), [])
   };
