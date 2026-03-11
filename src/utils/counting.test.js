@@ -57,7 +57,7 @@ describe('counting', () => {
     });
 
     it('returns minimum of 0.5', () => {
-      expect(decksRemaining(10)).toBe(10 / 52);
+      expect(decksRemaining(10)).toBe(0.5); // 10/52 ≈ 0.19 is below minimum, clamps to 0.5
       expect(decksRemaining(0)).toBe(0.5);
     });
   });

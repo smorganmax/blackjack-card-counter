@@ -25,6 +25,7 @@ export default function SpeedDrill({ onBack }) {
   const [startTime, setStartTime] = useState(null);
   const [elapsed, setElapsed] = useState(0);
   const [history, setHistory] = useState(() => loadDrillHistory());
+  const [showBreakdown, setShowBreakdown] = useState(false);
   const timerRef = useRef(null);
 
   const startDrill = useCallback((drillMode) => {
@@ -35,6 +36,7 @@ export default function SpeedDrill({ onBack }) {
     setCorrectCount(count);
     setCurrentIndex(0);
     setGuess('');
+    setShowBreakdown(false);
     setStartTime(Date.now());
     setMode(drillMode === 'group' ? 'group' : 'single');
   }, [cardCount]);
@@ -225,20 +227,20 @@ export default function SpeedDrill({ onBack }) {
     const correct = last.guess === last.actual;
 
     return (
-      <div className="flex flex-col h-full bg-gradient-to-b from-slate-900 to-slate-800 items-center justify-center px-6">
+      <div className="flex flex-col h-full bg-gradient-to-b from-slate-900 to-slate-800 items-center justify-center px-6 overflow-y-auto">
         <div className={`text-5xl mb-4 ${correct ? '' : ''}`}>{correct ? '✓' : '✗'}</div>
         <div className={`text-2xl font-bold mb-2 ${correct ? 'text-emerald-400' : 'text-red-400'}`}>
           {correct ? 'Correct!' : 'Incorrect'}
         </div>
 
-        <div className="bg-black/20 rounded-xl p-4 w-full max-w-xs mb-6 space-y-2">
+        <div className="bg-black/20 rounded-xl p-4 w-full max-w-xs mb-4 space-y-2">
           <div className="flex justify-between text-sm">
             <span className="text-gray-400">Your answer:</span>
-            <span className="text-white font-bold">{last.guess}</span>
+            <span className="text-white font-bold">{last.guess > 0 ? '+' : ''}{last.guess}</span>
           </div>
           <div className="flex justify-between text-sm">
             <span className="text-gray-400">Correct count:</span>
-            <span className="text-emerald-400 font-bold">{last.actual}</span>
+            <span className="text-emerald-400 font-bold">{last.actual > 0 ? '+' : ''}{last.actual}</span>
           </div>
           {!correct && (
             <div className="flex justify-between text-sm">
@@ -250,6 +252,47 @@ export default function SpeedDrill({ onBack }) {
             <span className="text-gray-400">Time:</span>
             <span className="text-white font-bold">{(last.timeMs / 1000).toFixed(1)}s</span>
           </div>
+        </div>
+
+        {/* Card breakdown */}
+        <div className="w-full max-w-xs mb-4">
+          <button
+            onClick={() => setShowBreakdown(!showBreakdown)}
+            className="w-full text-xs text-blue-400 py-2 text-center active:opacity-70"
+          >
+            {showBreakdown ? '▲ Hide cards' : `▼ Review all ${drillCards.length} cards`}
+          </button>
+          {showBreakdown && (
+            <div className="bg-black/20 rounded-xl p-3">
+              <div className="flex flex-wrap gap-1 justify-center">
+                {drillCards.map((card, i) => {
+                  const val = hiLoValue(card);
+                  return (
+                    <span
+                      key={i}
+                      className={`text-xs px-1.5 py-0.5 rounded font-mono ${
+                        val > 0 ? 'bg-emerald-500/25 text-emerald-400' :
+                        val < 0 ? 'bg-red-500/25 text-red-400' :
+                        'bg-gray-500/25 text-gray-400'
+                      }`}
+                    >
+                      {card.rank}{card.suit}&nbsp;{val > 0 ? '+1' : val < 0 ? '-1' : ' 0'}
+                    </span>
+                  );
+                })}
+              </div>
+              <div className="flex justify-between items-center mt-2 text-xs text-gray-500">
+                <span>
+                  <span className="text-emerald-400">2–6=+1</span>
+                  {' '}<span className="text-gray-400">7–9=0</span>
+                  {' '}<span className="text-red-400">10–A=-1</span>
+                </span>
+                <span>Total: <span className={last.actual >= 0 ? 'text-emerald-400 font-bold' : 'text-red-400 font-bold'}>
+                  {last.actual > 0 ? '+' : ''}{last.actual}
+                </span></span>
+              </div>
+            </div>
+          )}
         </div>
 
         <button onClick={() => setMode('menu')}
