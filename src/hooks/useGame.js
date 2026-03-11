@@ -431,6 +431,8 @@ function reducer(state, action) {
       }
 
       const newHandsSinceQuiz = (state.handsSinceQuiz || 0) + 1;
+      const quizInterval = state.settings?.countQuizInterval || 1;
+      const shouldShowQuiz = newHandsSinceQuiz >= quizInterval;
 
       return {
         ...state,
@@ -442,9 +444,9 @@ function reducer(state, action) {
         otherPlayers: otherResult.hands,
         roundResults,
         stats,
-        phase: PHASES.COUNT_QUIZ,
+        phase: shouldShowQuiz ? PHASES.COUNT_QUIZ : PHASES.ROUND_RESULT,
         message: '',
-        handsSinceQuiz: newHandsSinceQuiz,
+        handsSinceQuiz: shouldShowQuiz ? 0 : newHandsSinceQuiz,
       };
     }
 
@@ -481,6 +483,7 @@ function reducer(state, action) {
       return {
         ...state,
         quizSubmitted: true,
+        handsSinceQuiz: 0,
         phase: PHASES.ROUND_RESULT
       };
     }

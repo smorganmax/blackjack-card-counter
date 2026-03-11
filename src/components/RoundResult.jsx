@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Hand from './Hand';
+import { hiLoValue } from '../utils/counting';
 
 export default function RoundResult({
   dealerHand,
   playerHands,
+  dealtCards = [],
   roundResults,
   runningCount,
   trueCount,
@@ -13,6 +15,7 @@ export default function RoundResult({
   onNextRound,
   onBackToSetup
 }) {
+  const [showBreakdown, setShowBreakdown] = useState(false);
   const guessCorrect = quizAnswer !== null && quizAnswer === runningCount;
   const accuracy = stats.countGuesses > 0
     ? Math.round((stats.countCorrect / stats.countGuesses) * 100)
@@ -63,7 +66,7 @@ export default function RoundResult({
         {quizAnswer !== null && (
           <div className={`text-center mt-2 p-2 rounded-lg ${guessCorrect ? 'bg-emerald-500/20' : 'bg-red-500/20'}`}>
             <span className={`font-bold ${guessCorrect ? 'text-emerald-400' : 'text-red-400'}`}>
-              {guessCorrect ? 'Correct!' : `Wrong! You guessed ${quizAnswer}`}
+              {guessCorrect ? '✓ Correct!' : `✗ You guessed ${quizAnswer > 0 ? '+' : ''}${quizAnswer}`}
             </span>
           </div>
         )}
@@ -72,6 +75,49 @@ export default function RoundResult({
           Count Accuracy: {accuracy}% ({stats.countCorrect}/{stats.countGuesses})
         </div>
       </div>
+
+      {/* Card breakdown (collapsible) */}
+      {dealtCards.length > 0 && (
+        <div className="mx-4 mt-2">
+          <button
+            onClick={() => setShowBreakdown(!showBreakdown)}
+            className="w-full text-xs text-blue-400 py-2 text-center active:opacity-70"
+          >
+            {showBreakdown ? '▲ Hide card breakdown' : `▼ Review all ${dealtCards.length} cards dealt this shoe`}
+          </button>
+          {showBreakdown && (
+            <div className="bg-black/20 rounded-xl p-3">
+              <div className="flex flex-wrap gap-1 justify-center">
+                {dealtCards.map((card, i) => {
+                  const val = hiLoValue(card);
+                  return (
+                    <span
+                      key={i}
+                      className={`text-xs px-1.5 py-0.5 rounded font-mono ${
+                        val > 0 ? 'bg-emerald-500/25 text-emerald-400' :
+                        val < 0 ? 'bg-red-500/25 text-red-400' :
+                        'bg-gray-500/25 text-gray-400'
+                      }`}
+                    >
+                      {card.rank}{card.suit}&nbsp;{val > 0 ? '+1' : val < 0 ? '-1' : ' 0'}
+                    </span>
+                  );
+                })}
+              </div>
+              <div className="flex justify-between items-center mt-2 text-xs text-gray-500">
+                <span>
+                  <span className="text-emerald-400">2–6=+1</span>
+                  {' '}<span className="text-gray-400">7–9=0</span>
+                  {' '}<span className="text-red-400">10–A=-1</span>
+                </span>
+                <span>Total: <span className={runningCount >= 0 ? 'text-emerald-400 font-bold' : 'text-red-400 font-bold'}>
+                  {runningCount > 0 ? '+' : ''}{runningCount}
+                </span></span>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Session stats */}
       <div className="mx-4 mt-3 p-3 rounded-xl bg-black/20">

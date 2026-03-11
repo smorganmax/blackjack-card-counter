@@ -5,6 +5,7 @@ export default function MainMenu({ onNavigate }) {
     { id: 'play', label: 'Play Blackjack', desc: 'Full game with card counting', icon: '🃏', color: 'bg-emerald-600' },
     { id: 'countQuiz', label: 'Count Quiz', desc: 'Test your counting in-game', icon: '🧠', color: 'bg-blue-600' },
     { id: 'speedDrill', label: 'Speed Drills', desc: 'Flash cards & group counting', icon: '⚡', color: 'bg-purple-600' },
+    { id: 'guide', label: 'Hi-Lo Guide', desc: 'Learn the counting system', icon: '📖', color: 'bg-teal-600' },
     { id: 'stats', label: 'Statistics', desc: 'Track your improvement', icon: '📊', color: 'bg-yellow-600' },
     { id: 'settings', label: 'Settings', desc: 'Configure training options', icon: '⚙', color: 'bg-slate-600' },
   ];

@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import Hand from './Hand';
+import { hiLoValue } from '../utils/counting';
 
 export default function CountQuiz({
   dealerHand,
   playerHands,
+  dealtCards = [],
   runningCount,
   trueCount,
   roundResults,
@@ -11,6 +13,7 @@ export default function CountQuiz({
   onSkip
 }) {
   const [guess, setGuess] = useState('');
+  const [showHint, setShowHint] = useState(false);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -24,7 +27,7 @@ export default function CountQuiz({
   };
 
   return (
-    <div className="flex flex-col h-full bg-gradient-to-b from-felt-dark to-felt">
+    <div className="flex flex-col h-full bg-gradient-to-b from-felt-dark to-felt overflow-y-auto">
       {/* Show hands */}
       <div className="flex justify-center gap-6 pt-4 pb-2">
         <Hand cards={dealerHand} label="Dealer" small />
@@ -52,9 +55,45 @@ export default function CountQuiz({
       </div>
 
       {/* Quiz */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6">
-        <div className="text-xl font-bold text-white mb-2">What's the Running Count?</div>
-        <p className="text-sm text-gray-400 mb-6">Think about all cards dealt this shoe</p>
+      <div className="flex flex-col items-center px-6 pt-4 pb-2">
+        <div className="text-xl font-bold text-white mb-1">What's the Running Count?</div>
+        <p className="text-sm text-gray-400 mb-4">Think about all {dealtCards.length} cards dealt this shoe</p>
+
+        {/* Hint: dealt cards with values */}
+        <button
+          type="button"
+          onClick={() => setShowHint(!showHint)}
+          className="text-xs text-blue-400 underline mb-3 active:opacity-70"
+        >
+          {showHint ? 'Hide hint ▲' : 'Show dealt cards ▼'}
+        </button>
+
+        {showHint && dealtCards.length > 0 && (
+          <div className="w-full max-w-sm bg-black/30 rounded-xl p-3 mb-4">
+            <div className="flex flex-wrap gap-1 justify-center">
+              {dealtCards.map((card, i) => {
+                const val = hiLoValue(card);
+                return (
+                  <span
+                    key={i}
+                    className={`text-xs px-1.5 py-0.5 rounded font-mono ${
+                      val > 0 ? 'bg-emerald-500/25 text-emerald-400' :
+                      val < 0 ? 'bg-red-500/25 text-red-400' :
+                      'bg-gray-500/25 text-gray-400'
+                    }`}
+                  >
+                    {card.rank}{card.suit}&nbsp;{val > 0 ? '+1' : val < 0 ? '-1' : ' 0'}
+                  </span>
+                );
+              })}
+            </div>
+            <div className="text-xs text-gray-500 text-right mt-2">
+              2–6 = <span className="text-emerald-400">+1</span> &nbsp;
+              7–9 = <span className="text-gray-400">0</span> &nbsp;
+              10–A = <span className="text-red-400">-1</span>
+            </div>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="w-full max-w-xs">
           <div className="flex items-center justify-center gap-3 mb-6">

@@ -10,6 +10,7 @@ import SpeedDrill from './components/SpeedDrill';
 import StatsDashboard from './components/StatsDashboard';
 import SettingsScreen from './components/SettingsScreen';
 import DistractionOverlay from './components/DistractionOverlay';
+import HiLoGuide from './components/HiLoGuide';
 
 export default function App() {
   const { state, actions, trueCount: tc, PHASES } = useGame();
@@ -31,6 +32,10 @@ export default function App() {
   // Non-game screens
   if (screen === 'menu' && state.phase === PHASES.SETUP) {
     return <MainMenu onNavigate={handleNavigate} />;
+  }
+
+  if (screen === 'guide') {
+    return <HiLoGuide onBack={() => setScreen('menu')} />;
   }
 
   if (screen === 'speedDrill') {
@@ -118,6 +123,7 @@ export default function App() {
         <CountQuiz
           dealerHand={state.dealerHand}
           playerHands={state.playerHands}
+          dealtCards={state.dealtCards}
           runningCount={state.runningCount}
           trueCount={tc}
           roundResults={state.roundResults}
@@ -131,6 +137,7 @@ export default function App() {
         <RoundResult
           dealerHand={state.dealerHand}
           playerHands={state.playerHands}
+          dealtCards={state.dealtCards}
           roundResults={state.roundResults}
           runningCount={state.runningCount}
           trueCount={tc}
