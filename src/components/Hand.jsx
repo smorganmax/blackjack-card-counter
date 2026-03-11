@@ -1,15 +1,19 @@
 import React from 'react';
 import Card from './Card';
-import { handTotal } from '../utils/hand';
+import { handTotal, isBust, isBlackjack } from '../utils/hand';
 
 export default function Hand({ cards, hidden = false, label, active = false, small = false }) {
   const total = hidden ? handTotal([cards[0]]) : handTotal(cards);
-  const displayTotal = hidden ? `${total} + ?` : total;
+  const displayTotal = hidden ? `${total}+?` : total;
+  const bust = !hidden && isBust(cards);
+  const bj = !hidden && isBlackjack(cards);
+
+  const totalColor = active ? 'text-yellow-400' : bust ? 'text-red-400' : bj ? 'text-yellow-300' : 'text-white';
 
   return (
     <div className={`flex flex-col items-center gap-1 ${active ? 'scale-105' : ''} transition-transform`}>
       {label && (
-        <div className="text-xs text-gray-400 uppercase tracking-wide">{label}</div>
+        <div className="text-[10px] text-gray-400 uppercase tracking-wide">{label}</div>
       )}
       <div className="flex gap-1" style={{ marginLeft: cards.length > 4 ? '-4px' : '0' }}>
         {cards.map((card, i) => (
@@ -21,8 +25,8 @@ export default function Hand({ cards, hidden = false, label, active = false, sma
           </div>
         ))}
       </div>
-      <div className={`text-sm font-bold ${active ? 'text-yellow-400' : 'text-white'}`}>
-        {displayTotal}
+      <div className={`text-sm font-extrabold ${totalColor}`}>
+        {bj ? '🌟 BJ' : bust ? '💥 BUST' : displayTotal}
       </div>
     </div>
   );

@@ -34,7 +34,7 @@ export default function CountQuiz({
       </div>
 
       {/* Results summary */}
-      <div className="flex justify-center gap-3 py-2">
+      <div className="flex justify-center gap-3 pb-2">
         {roundResults.map((r, i) => (
           <span
             key={i}
@@ -53,52 +53,57 @@ export default function CountQuiz({
 
       {/* Quiz */}
       <div className="flex-1 flex flex-col items-center justify-center px-6">
-        <div className="text-xl font-bold text-white mb-2">What's the Running Count?</div>
-        <p className="text-sm text-gray-400 mb-6">Think about all cards dealt this shoe</p>
-
-        <form onSubmit={handleSubmit} className="w-full max-w-xs">
-          <div className="flex items-center justify-center gap-3 mb-6">
-            <button
-              type="button"
-              onClick={() => adjustGuess(-1)}
-              className="w-12 h-12 rounded-full bg-slate-700 text-white font-bold text-xl active:scale-95"
-            >
-              -
-            </button>
-            <input
-              type="number"
-              inputMode="numeric"
-              value={guess}
-              onChange={(e) => setGuess(e.target.value)}
-              placeholder="0"
-              className="w-24 h-14 text-center text-2xl font-bold bg-slate-800 text-white rounded-xl
-                         border-2 border-slate-600 focus:border-blue-500 focus:outline-none"
-            />
-            <button
-              type="button"
-              onClick={() => adjustGuess(1)}
-              className="w-12 h-12 rounded-full bg-slate-700 text-white font-bold text-xl active:scale-95"
-            >
-              +
-            </button>
+        <div className="w-full max-w-xs p-5 rounded-2xl bg-black/20 border border-white/5">
+          <div className="text-center mb-1">
+            <div className="text-2xl">🧠</div>
+            <div className="text-lg font-extrabold text-white mt-1">Running Count?</div>
+            <p className="text-xs text-gray-400 mt-1">Based on all cards dealt this shoe</p>
           </div>
 
-          <button
-            type="submit"
-            className="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold text-lg rounded-xl
-                       active:scale-95 transition-all mb-3"
-          >
-            Submit
-          </button>
-          <button
-            type="button"
-            onClick={onSkip}
-            className="w-full py-3 bg-slate-700 hover:bg-slate-600 text-gray-300 font-medium rounded-xl
-                       active:scale-95 transition-all"
-          >
-            Skip
-          </button>
-        </form>
+          <form onSubmit={handleSubmit} className="mt-4">
+            <div className="flex items-center justify-center gap-3 mb-5">
+              <button
+                type="button"
+                onClick={() => adjustGuess(-1)}
+                className="w-14 h-14 rounded-full bg-slate-700 hover:bg-slate-600 text-white font-bold text-2xl active:scale-95 transition-all shadow"
+              >
+                −
+              </button>
+              <input
+                type="number"
+                inputMode="numeric"
+                value={guess}
+                onChange={(e) => setGuess(e.target.value)}
+                placeholder="0"
+                className="w-24 h-16 text-center text-3xl font-extrabold bg-slate-800 text-white rounded-xl
+                           border-2 border-slate-600 focus:border-blue-500 focus:outline-none"
+              />
+              <button
+                type="button"
+                onClick={() => adjustGuess(1)}
+                className="w-14 h-14 rounded-full bg-slate-700 hover:bg-slate-600 text-white font-bold text-2xl active:scale-95 transition-all shadow"
+              >
+                +
+              </button>
+            </div>
+
+            <button
+              type="submit"
+              className="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-lg rounded-2xl
+                         active:scale-95 transition-all mb-2 shadow-lg shadow-blue-600/30"
+            >
+              Submit Answer
+            </button>
+            <button
+              type="button"
+              onClick={onSkip}
+              className="w-full py-3 bg-slate-700/60 text-gray-400 font-medium rounded-xl
+                         active:scale-95 transition-all text-sm"
+            >
+              Skip
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );
