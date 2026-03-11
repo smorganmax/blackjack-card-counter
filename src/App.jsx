@@ -99,6 +99,7 @@ export default function App() {
             settings={state.settings}
             strategyFeedback={state.strategyFeedback}
             deviationFeedback={state.deviationFeedback}
+            chips={state.stats.chips}
             onHit={actions.hit}
             onStand={actions.stand}
             onDouble={actions.double}
@@ -107,6 +108,7 @@ export default function App() {
             onDeclineInsurance={actions.declineInsurance}
             onDealerPlay={actions.dealerPlay}
             onToggleCount={actions.toggleCount}
+            onBack={handleBackToMenu}
             PHASES={PHASES}
           />
           <DistractionOverlay enabled={state.settings?.casinoDistractions && state.phase === PHASES.PLAYER_TURN} />

@@ -23,6 +23,7 @@ export default function GameTable({
   settings,
   strategyFeedback,
   deviationFeedback,
+  chips,
   onHit,
   onStand,
   onDouble,
@@ -31,6 +32,7 @@ export default function GameTable({
   onDeclineInsurance,
   onDealerPlay,
   onToggleCount,
+  onBack,
   PHASES
 }) {
   // Auto-trigger dealer play
@@ -60,10 +62,21 @@ export default function GameTable({
       {/* Top bar */}
       <div className="flex justify-between items-center px-3 pt-2 pb-1">
         <button
+          onClick={onBack}
+          className="text-xs px-3 py-1.5 rounded-full bg-black/30 text-gray-300 active:bg-black/50"
+        >
+          ← Menu
+        </button>
+        {chips !== undefined && (
+          <div className="text-xs font-bold text-yellow-400 bg-black/30 px-3 py-1.5 rounded-full">
+            💰 ${chips}
+          </div>
+        )}
+        <button
           onClick={onToggleCount}
           className="text-xs px-3 py-1.5 rounded-full bg-black/30 text-gray-300 active:bg-black/50"
         >
-          {showCount ? 'Hide Count' : 'Show Count'}
+          {showCount ? '👁 Hide' : '👁 Count'}
         </button>
       </div>
 
@@ -106,26 +119,29 @@ export default function GameTable({
 
       {/* Message */}
       {message && (
-        <div className="text-center py-1">
-          <span className="text-yellow-400 font-bold text-lg animate-pulse">{message}</span>
+        <div className="text-center py-1 px-4">
+          <span className="inline-block bg-black/30 text-yellow-400 font-bold text-lg px-4 py-1 rounded-full animate-pulse">{message}</span>
         </div>
       )}
 
       {/* Insurance prompt */}
       {insuranceOffered && phase === PHASES.PLAYER_TURN && (
-        <div className="flex justify-center gap-3 py-2">
-          <button
-            onClick={() => onInsurance(true)}
-            className="px-6 py-3 bg-yellow-600 text-white font-bold rounded-xl active:scale-95"
-          >
-            Take Insurance
-          </button>
-          <button
-            onClick={onDeclineInsurance}
-            className="px-6 py-3 bg-slate-700 text-white font-bold rounded-xl active:scale-95"
-          >
-            No Thanks
-          </button>
+        <div className="mx-3 mb-2 p-3 rounded-xl bg-yellow-900/30 border border-yellow-500/30">
+          <div className="text-center text-yellow-300 font-bold text-sm mb-2">🛡 Insurance? (Dealer shows Ace)</div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => onInsurance(true)}
+              className="flex-1 py-3 bg-yellow-600 text-white font-bold rounded-xl active:scale-95 text-sm"
+            >
+              Take Insurance
+            </button>
+            <button
+              onClick={onDeclineInsurance}
+              className="flex-1 py-3 bg-slate-700 text-white font-bold rounded-xl active:scale-95 text-sm"
+            >
+              No Thanks
+            </button>
+          </div>
         </div>
       )}
 
@@ -168,8 +184,10 @@ export default function GameTable({
       )}
 
       {phase === PHASES.DEALER_TURN && (
-        <div className="text-center py-4 text-gray-300 animate-pulse">
-          Dealer playing...
+        <div className="text-center py-3 text-gray-300">
+          <span className="inline-block animate-pulse bg-black/30 px-4 py-2 rounded-full text-sm">
+            🃏 Dealer playing...
+          </span>
         </div>
       )}
     </div>
