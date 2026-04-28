@@ -258,7 +258,7 @@ function reducer(state, action) {
         activeHandIndex: activeIndex,
         phase: nextPhase,
         message,
-        strategyFeedback: stratCheck,
+        strategyFeedback: { ...stratCheck, playerCards: preHitHand.cards, dealerUpcard: dealerUp },
         deviationFeedback: devCheck,
         stats,
       };
@@ -272,12 +272,13 @@ function reducer(state, action) {
       const devCheck_s = checkDeviationPlay('stand', preStandHand.cards, dealerUp_s, tc_s);
 
       const stats_s = updateStrategyStats(state.stats, stratCheck_s, devCheck_s);
+      const fb_s = { ...stratCheck_s, playerCards: preStandHand.cards, dealerUpcard: dealerUp_s };
 
       let activeIndex = state.activeHandIndex;
       if (activeIndex < state.playerHands.length - 1) {
-        return { ...state, activeHandIndex: activeIndex + 1, strategyFeedback: stratCheck_s, deviationFeedback: devCheck_s, stats: stats_s };
+        return { ...state, activeHandIndex: activeIndex + 1, strategyFeedback: fb_s, deviationFeedback: devCheck_s, stats: stats_s };
       }
-      return { ...state, phase: PHASES.DEALER_TURN, strategyFeedback: stratCheck_s, deviationFeedback: devCheck_s, stats: stats_s };
+      return { ...state, phase: PHASES.DEALER_TURN, strategyFeedback: fb_s, deviationFeedback: devCheck_s, stats: stats_s };
     }
 
     case 'DOUBLE': {
@@ -314,7 +315,7 @@ function reducer(state, action) {
         activeHandIndex: activeIndex,
         phase: activeIndex === state.activeHandIndex ? PHASES.DEALER_TURN : state.phase,
         message: isBust(hand.cards) ? 'Bust!' : '',
-        strategyFeedback: stratCheck_d,
+        strategyFeedback: { ...stratCheck_d, playerCards: preDoubleHand.cards, dealerUpcard: dealerUp_d },
         deviationFeedback: devCheck_d,
         stats: stats_d,
       };
@@ -358,7 +359,7 @@ function reducer(state, action) {
         runningCount: runningCount(dealtCards),
         playerHands: hands,
         message: 'Hand split!',
-        strategyFeedback: stratCheck_sp,
+        strategyFeedback: { ...stratCheck_sp, playerCards: hand.cards, dealerUpcard: dealerUp_sp },
         deviationFeedback: devCheck_sp,
         stats: stats_sp,
       };

@@ -2,19 +2,17 @@ import React, { useState } from 'react';
 import { TOTAL_CARDS } from '../utils/deck';
 
 const RELIABILITY_LEVELS = [
-  { min: 0, max: 25, label: 'Low reliability', sublabel: 'early shoe', color: 'text-gray-400', bg: 'bg-gray-600', barColor: 'bg-gray-400' },
-  { min: 25, max: 50, label: 'Medium reliability', sublabel: '', color: 'text-yellow-400', bg: 'bg-yellow-900/30', barColor: 'bg-yellow-400' },
-  { min: 50, max: 75, label: 'High reliability', sublabel: 'count is meaningful', color: 'text-emerald-400', bg: 'bg-emerald-900/30', barColor: 'bg-emerald-400' },
-  { min: 75, max: 100, label: 'Maximum reliability', sublabel: '', color: 'text-green-300', bg: 'bg-green-900/30', barColor: 'bg-green-300' },
+  { min: 0, max: 25, label: 'Low', color: 'text-gray-400', barColor: 'bg-gray-500' },
+  { min: 25, max: 50, label: 'Medium', color: 'text-yellow-400', barColor: 'bg-yellow-400' },
+  { min: 50, max: 75, label: 'High', color: 'text-emerald-400', barColor: 'bg-emerald-400' },
+  { min: 75, max: 100, label: 'Max', color: 'text-green-300', barColor: 'bg-green-300' },
 ];
 
-// Approximate player edge based on true count (Hi-Lo, 2 deck)
-// Baseline house edge ~0.4%, each TC point ≈ +0.5%
 function playerEdge(tc) {
   return (-0.4 + tc * 0.5).toFixed(1);
 }
 
-export default function PenetrationIndicator({ shoeSize, trueCount, showPenetration, showReliability }) {
+export default function PenetrationIndicator({ shoeSize, trueCount, showPenetration, showReliability, compact = false }) {
   const [showTooltip, setShowTooltip] = useState(false);
 
   if (!showPenetration && !showReliability) return null;
@@ -23,6 +21,27 @@ export default function PenetrationIndicator({ shoeSize, trueCount, showPenetrat
   const level = RELIABILITY_LEVELS.find(l => dealtPercent >= l.min && dealtPercent < l.max) || RELIABILITY_LEVELS[3];
   const edge = playerEdge(trueCount);
   const edgeNum = parseFloat(edge);
+
+  if (compact) {
+    return (
+      <div className="flex items-center gap-2">
+        {showPenetration && (
+          <div className="flex items-center gap-1.5">
+            <div className="w-12 h-1 bg-white/10 rounded-full overflow-hidden">
+              <div className={`h-full ${level.barColor} rounded-full transition-all duration-300`}
+                style={{ width: `${dealtPercent}%` }} />
+            </div>
+            <span className={`text-[10px] font-bold ${level.color} tabular-nums`}>{dealtPercent}%</span>
+          </div>
+        )}
+        {showPenetration && (
+          <span className={`text-[10px] font-bold ${edgeNum >= 0 ? 'text-emerald-400' : 'text-red-400'} tabular-nums`}>
+            {edgeNum >= 0 ? '+' : ''}{edge}%
+          </span>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="mx-3 mb-1">
@@ -34,7 +53,7 @@ export default function PenetrationIndicator({ shoeSize, trueCount, showPenetrat
                 style={{ width: `${dealtPercent}%` }} />
             </div>
           </div>
-          <div className={`text-xs font-bold ${level.color} whitespace-nowrap`}>{dealtPercent}%</div>
+          <div className={`text-xs font-bold ${level.color} whitespace-nowrap tabular-nums`}>{dealtPercent}%</div>
         </div>
       )}
 
@@ -42,24 +61,22 @@ export default function PenetrationIndicator({ shoeSize, trueCount, showPenetrat
         {showReliability && (
           <button
             onClick={() => setShowTooltip(!showTooltip)}
-            className={`text-[10px] font-medium ${level.color} ${level.bg} px-2 py-0.5 rounded-full`}
+            className={`text-[10px] font-medium ${level.color} glass px-2 py-0.5 rounded-full`}
           >
-            {level.label}
-            {level.sublabel ? ` — ${level.sublabel}` : ''}
+            {level.label} reliability
           </button>
         )}
-
         {showPenetration && (
-          <div className={`text-[10px] font-bold ${edgeNum >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+          <div className={`text-[10px] font-bold ${edgeNum >= 0 ? 'text-emerald-400' : 'text-red-400'} tabular-nums`}>
             Edge: {edgeNum >= 0 ? '+' : ''}{edge}%
           </div>
         )}
       </div>
 
       {showTooltip && (
-        <div className="mt-1 p-2 bg-black/40 rounded-lg text-[10px] text-gray-300">
+        <div className="mt-1 p-2.5 glass-dark rounded-xl text-[11px] text-gray-300 animate-fade-in">
           Card counts become more reliable as more cards are dealt. The true count indicates your edge.
-          <button onClick={() => setShowTooltip(false)} className="ml-2 text-blue-400">dismiss</button>
+          <button onClick={() => setShowTooltip(false)} className="ml-2 text-blue-400 font-medium">OK</button>
         </div>
       )}
     </div>

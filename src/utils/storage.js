@@ -79,6 +79,7 @@ export function defaultSettings() {
   return {
     showCount: false,
     strategyHelper: false,
+    strategyHelperMode: 'off',
     betCoaching: false,
     deviationAlerts: true,
     casinoDistractions: false,

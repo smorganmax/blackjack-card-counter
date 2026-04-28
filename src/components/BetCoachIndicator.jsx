@@ -26,18 +26,21 @@ export default function BetCoachIndicator({ trueCount, currentBet, enabled }) {
   const isOptimal = currentBet === rec.bet;
 
   return (
-    <div className="mx-4 mb-3">
-      <div className={`p-3 rounded-xl border ${isOptimal ? 'bg-emerald-900/20 border-emerald-500/30' : 'bg-yellow-900/20 border-yellow-500/30'}`}>
-        <div className="flex justify-between items-center">
-          <div>
-            <div className="text-xs text-gray-400">Optimal Bet (TC {trueCount >= 0 ? '+' : ''}{trueCount})</div>
-            <div className={`text-lg font-bold ${isOptimal ? 'text-emerald-400' : 'text-yellow-400'}`}>
-              ${rec.bet} <span className="text-xs font-normal text-gray-400">({rec.label})</span>
-            </div>
+    <div className="w-full max-w-xs mb-4">
+      <div className={`section-card flex items-center justify-between ${
+        isOptimal ? 'border-emerald-500/20' : 'border-amber-500/20'
+      }`}>
+        <div>
+          <div className="text-[10px] text-gray-500 uppercase tracking-wide">
+            Optimal Bet (TC {trueCount >= 0 ? '+' : ''}{trueCount})
           </div>
-          <div className="text-2xl">
-            {isOptimal ? '✓' : '⚠'}
+          <div className={`text-lg font-bold tabular-nums ${isOptimal ? 'text-emerald-400' : 'text-gold'}`}>
+            ${rec.bet} <span className="text-xs font-normal text-gray-500">({rec.label})</span>
           </div>
+        </div>
+        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold
+          ${isOptimal ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}`}>
+          {isOptimal ? '✓' : '!'}
         </div>
       </div>
     </div>

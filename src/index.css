@@ -19,13 +19,15 @@
 body {
   margin: 0;
   padding: 0;
-  background: #0f172a;
+  background: #0a0a0f;
   color: white;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
   overflow: hidden;
   position: fixed;
   width: 100%;
   height: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 #root {
@@ -37,41 +39,158 @@ body {
   padding-left: var(--sal);
 }
 
-@keyframes dealCard {
-  from {
-    opacity: 0;
-    transform: translateY(-40px) scale(0.8);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+/* Glass morphism */
+.glass {
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.card-deal {
-  animation: dealCard 0.3s ease-out;
+.glass-dark {
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+/* Card styles */
+.playing-card {
+  border-radius: 8px;
+  background: linear-gradient(145deg, #ffffff 0%, #f0f0f0 100%);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+  position: relative;
+  overflow: hidden;
 }
 
-.slide-up {
-  animation: slideUp 0.3s ease-out;
+.playing-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 40%;
+  background: linear-gradient(to bottom, rgba(255,255,255,0.3), transparent);
+  pointer-events: none;
+  border-radius: 8px 8px 0 0;
 }
 
-@keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 5px rgba(59, 130, 246, 0.5); }
-  50% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.8); }
+.card-back {
+  border-radius: 8px;
+  background: linear-gradient(135deg, #1e3a5f 0%, #1a2d4a 50%, #1e3a5f 100%);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+  position: relative;
+  overflow: hidden;
 }
 
-.pulse-glow {
-  animation: pulse-glow 2s ease-in-out infinite;
+.card-back::before {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border: 1.5px solid rgba(255,255,255,0.15);
+  border-radius: 6px;
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 4px,
+    rgba(255,255,255,0.03) 4px,
+    rgba(255,255,255,0.03) 8px
+  );
+}
+
+.card-back::after {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 4px;
+  background: radial-gradient(ellipse at center, rgba(30,90,140,0.4), transparent 70%);
+}
+
+/* Felt texture */
+.felt-bg {
+  background-color: #145a31;
+  background-image:
+    radial-gradient(circle at 25% 25%, rgba(255,255,255,0.02) 0%, transparent 1.5px),
+    radial-gradient(circle at 75% 75%, rgba(0,0,0,0.03) 0%, transparent 1.5px);
+  background-size: 8px 8px;
+}
+
+/* Chip styling */
+.chip {
+  border-radius: 9999px;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.15);
+  position: relative;
+  overflow: hidden;
+}
+
+.chip::before {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border: 2px dashed rgba(255,255,255,0.25);
+  border-radius: 9999px;
+}
+
+/* Button base */
+.btn-primary {
+  @apply py-3.5 px-6 font-bold rounded-2xl transition-all duration-150;
+  @apply active:scale-[0.96] active:brightness-90;
+  @apply shadow-lg;
+}
+
+/* Section card */
+.section-card {
+  @apply rounded-2xl p-4;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Segmented control */
+.segment-active {
+  @apply bg-emerald-600 text-white shadow-md;
+}
+
+.segment-inactive {
+  @apply text-gray-400;
+  background: transparent;
+}
+
+/* iOS-style toggle */
+.toggle-track {
+  width: 50px;
+  height: 30px;
+  border-radius: 15px;
+  transition: background-color 0.25s ease;
+  position: relative;
+  cursor: pointer;
+}
+
+.toggle-thumb {
+  width: 26px;
+  height: 26px;
+  border-radius: 13px;
+  background: white;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  position: absolute;
+  top: 2px;
+  transition: transform 0.25s ease;
+}
+
+/* Scrollbar hiding */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
 }

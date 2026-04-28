@@ -10,10 +10,27 @@ import SpeedDrill from './components/SpeedDrill';
 import StatsDashboard from './components/StatsDashboard';
 import SettingsScreen from './components/SettingsScreen';
 import DistractionOverlay from './components/DistractionOverlay';
+import Tutorial from './components/Tutorial';
+
+const TUTORIAL_KEY = 'blackjack-counter-tutorial-seen';
 
 export default function App() {
   const { state, actions, trueCount: tc, PHASES } = useGame();
   const [screen, setScreen] = useState('menu');
+  const [tutorialSeen, setTutorialSeen] = useState(() => {
+    try { return localStorage.getItem(TUTORIAL_KEY) === 'true'; } catch { return false; }
+  });
+
+  const handleTutorialComplete = () => {
+    try { localStorage.setItem(TUTORIAL_KEY, 'true'); } catch {}
+    setTutorialSeen(true);
+    actions.updateSettings({
+      ...state.settings,
+      showCount: true,
+      strategyHelper: true,
+      betCoaching: true,
+    });
+  };
 
   const handleNavigate = (target) => {
     if (target === 'play' || target === 'countQuiz') {
@@ -27,6 +44,11 @@ export default function App() {
     actions.backToSetup();
     setScreen('menu');
   };
+
+  // Tutorial on first launch
+  if (!tutorialSeen && screen === 'menu' && state.phase === PHASES.SETUP) {
+    return <Tutorial onComplete={handleTutorialComplete} />;
+  }
 
   // Non-game screens
   if (screen === 'menu' && state.phase === PHASES.SETUP) {
@@ -47,6 +69,10 @@ export default function App() {
         settings={state.settings}
         onUpdateSettings={actions.updateSettings}
         onBack={() => setScreen('menu')}
+        onResetTutorial={() => {
+          try { localStorage.removeItem(TUTORIAL_KEY); } catch {}
+          setTutorialSeen(false);
+        }}
       />
     );
   }
@@ -118,9 +144,11 @@ export default function App() {
         <CountQuiz
           dealerHand={state.dealerHand}
           playerHands={state.playerHands}
+          otherPlayers={state.otherPlayers}
           runningCount={state.runningCount}
           trueCount={tc}
           roundResults={state.roundResults}
+          dealtCards={state.dealtCards}
           onSubmit={actions.submitCountGuess}
           onSkip={actions.skipQuiz}
         />
@@ -137,6 +165,7 @@ export default function App() {
           quizAnswer={state.quizAnswer}
           quizSubmitted={state.quizSubmitted}
           stats={state.stats}
+          dealtCards={state.dealtCards}
           onNextRound={actions.nextRound}
           onBackToSetup={handleBackToMenu}
         />
